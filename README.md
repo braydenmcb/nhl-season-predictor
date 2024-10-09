@@ -14,6 +14,6 @@ use `python scraper.py --year "year"` to scrape the data from that season, it wi
   - The default year is the previous season (right now the 2022-23 season)
 
 ## Road Map
-- [] Make the scraper track up to the specified season at compilation and output to a csv file
-- [] Make the prediciton model and output to csv
-- [] make a way to ensure if the season is already completed \(in order to be able to use loss funcs. to determine accuracy)
+- [ ] Make the scraper track up to the specified season at compilation and output to a csv file
+- [ ] Make the prediciton model and output to csv
+- [ ] make a way to ensure if the season is already completed \(in order to be able to use loss funcs. to determine accuracy)

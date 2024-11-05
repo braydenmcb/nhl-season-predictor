@@ -12,6 +12,7 @@
 use `python scraper.py --year "year"` to scrape the data from that season, it will be based on the latter year in the season
   - Ex. if you want the 2023-24 season, use `--year 2024`
   - The default year is the previous season (right now the 2022-23 season)
+You can also use `python scraper.py --year 'year' --single` if you just want the season stats of all skaters from that season
 
 ## Road Map
 - [ ] Make the scraper track up to the specified season at compilation and output to a csv file

@@ -1,2 +1,2 @@
-data
+# data/*.csv   # Ignore all .csv files in the data/ directory for now
 proxies.txt

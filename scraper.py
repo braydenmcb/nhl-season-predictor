@@ -13,13 +13,15 @@ import time
 #     return {'http': 'http://' + proxies.pop()}
 
 def scrape_season(year):
+    """
+This function will scrape the season given as an argument and save the data to a csv file 
+for the learning model to parse later as the expected values to help calculate loss
+"""
     try:
         response = requests.get(f'https://www.hockey-reference.com/leagues/NHL_{year}_skaters.html')
     except requests.exceptions.RequestException as e:
         print(f"Error fetching page: {e}")
         return 0
-    
-    print(f"Scraping season: {year}")
 
     soup = BeautifulSoup(response.content, 'html.parser')
     table = soup.find('table', {'id': 'player_stats'})
@@ -27,11 +29,10 @@ def scrape_season(year):
     headers = [th.text for th in table.find('thead').find_all('th')][10:]  # Skipping the over headers
     players = table.find('tbody').find_all('tr')
 
+    print(f"Scraping season: {year}")
     players_data = []
 
-    previous_player = players[0].find('td').find('a').text
-    print(headers)
-
+    previous_player = ''
     start = time.time()
     for player in players:
         if player.find('th', {"scope": "row"}) is not None:
@@ -81,7 +82,7 @@ then it'll save the data to a csv file for the learning model to parse later
     player_data = []
     for row in rows:
         # if the season is greater than the year argument, skip it
-        if row.find('th', {"data-stat": "year_id"}).text[:4] >= year:
+        if row.find('th', {"data-stat": "year_id"}).text[:4] >= str(year):
             continue
         # else, scrape the data
         if row.find('th', {"scope": "row"}) is not None:
@@ -118,8 +119,14 @@ def main(year):
     start_time = time.time()
     for player in players:
         if player.find('th', {"scope": "row"}) is not None:
-            player_link = player.find('td').find('a')
-            current_player_page = 'https://www.hockey-reference.com' + player_link['href']
+
+            try:
+                player_link = player.find('td').find('a')
+                current_player_page = 'https://www.hockey-reference.com' + player_link['href']
+            except TypeError:
+                print("Could not find player link")
+                continue
+
             if current_player_page != prev_player_page:
                 # print(f"Scraping player page: {current_player_page} | previous player page: {prev_player_page}\n")
                 player_data = scrape_player(current_player_page, year)
@@ -132,9 +139,11 @@ def main(year):
                 print("Skipping duplicate player page")
             time.sleep(2.5) # Sleep for 2.5 seconds to prevent rate limiting (30 requests / minute) (TODO: Implement proxies)
     end_time = time.time()
+    
     print("#" * 50)
     print(f"Scraped {len(training_data)} players in {end_time - start_time} seconds")
     print("#" * 50)
+    
     df = pd.DataFrame(training_data, columns=headers)
     print(df.head())
 

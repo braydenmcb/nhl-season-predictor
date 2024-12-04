@@ -17,6 +17,6 @@ you can also use `python scraper.py --year "year" --single` to scrape a single s
   - leaving out the `--single` will scrape each players career stats by season
 
 ## Road Map
-- [ ] Make the scraper track up to the specified season at compilation and output to a csv file
+- [x] Make the scraper track up to the specified season at compilation and output to a csv file
 - [ ] Make the prediciton model and output to csv
 - [ ] make a way to ensure if the season is already completed \(in order to be able to use loss funcs. to determine accuracy)

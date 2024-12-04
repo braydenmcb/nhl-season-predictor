@@ -12,7 +12,51 @@ import time
 # def get_proxy():
 #     return {'http': 'http://' + proxies.pop()}
 
-def scrape_player(url):
+def scrape_season(year):
+    """
+This function will scrape the season given as an argument and save the data to a csv file 
+for the learning model to parse later as the expected values to help calculate loss
+"""
+    try:
+        response = requests.get(f'https://www.hockey-reference.com/leagues/NHL_{year}_skaters.html')
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching page: {e}")
+        return 0
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+    table = soup.find('table', {'id': 'player_stats'})
+
+    headers = [th.text for th in table.find('thead').find_all('th')][10:]  # Skipping the over headers
+    players = table.find('tbody').find_all('tr')
+
+    print(f"Scraping season: {year}")
+    players_data = []
+
+    previous_player = ''
+    start = time.time()
+    for player in players:
+        if player.find('th', {"scope": "row"}) is not None:
+            rank = player.find('th', {"scope": "row"}).text
+            stats = [td.text for td in player.find_all('td')]
+            if stats[0] == previous_player or stats[0] == "League Average":
+#                print(f"Skipping duplicate player {stats[0]}, caught from {previous_player}")
+                continue
+#           print(rank, stats)
+            players_data.append([rank] + stats)
+            previous_player = stats[0]
+    end = time.time()
+
+    print(f"\nScraped {len(players_data)} players in {end - start} seconds")
+
+    df = pd.DataFrame(players_data, columns=headers)
+    print(df.head())
+    df.to_csv(f'data/season_stats_{year}.csv', index=False)
+            
+
+
+
+
+def scrape_player(url, year):
     """
 This function will scrape the player stats from the player's page on hockey-reference.com
 it'll run thru the top 100 players from the last season and get their stats from all of their previous seasons (not including playoffs)
@@ -29,7 +73,7 @@ then it'll save the data to a csv file for the learning model to parse later
     soup = BeautifulSoup(response.content, 'html.parser')
     player_name = soup.find('div', {'class' : 'players'}, ).find('h1').text
     print("Scraping player:", player_name)
-    table = soup.find('table', {'class': 'stats_table'})  # The table ID is 'stats_table' for regular season player stats
+    table = soup.find('table', {'id': 'player_stats'})  # The table ID is 'stats_table' for regular season player stats
     if table is None:
         print(f"Could not find stats table for player: {player_name}")
         return None
@@ -37,6 +81,10 @@ then it'll save the data to a csv file for the learning model to parse later
     rows = table.find('tbody').find_all('tr')
     player_data = []
     for row in rows:
+        # if the season is greater than the year argument, skip it
+        if row.find('th', {"data-stat": "year_id"}).text[:4] >= str(year):
+            continue
+        # else, scrape the data
         if row.find('th', {"scope": "row"}) is not None:
             season_link = row.find('th')
             season_year = season_link.text
@@ -98,15 +146,17 @@ and then scrape the player pages for the players that played in that season via 
     start_time = time.time()
     for player in players:
         if player.find('th', {"scope": "row"}) is not None:
-            player_link = player.find('td').find('a')
-            try: 
-                current_player_page = 'https://www.hockey-reference.com' + player_link['href']  #TODO: add a check to ensure it knows theres a link
+
+            try:
+                player_link = player.find('td').find('a')
+                current_player_page = 'https://www.hockey-reference.com' + player_link['href']
             except TypeError:
-                print(f"Could not find player page for player: {player.find('th').text}")
+                print("Could not find player link")
                 continue
+
             if current_player_page != prev_player_page:
                 # print(f"Scraping player page: {current_player_page} | previous player page: {prev_player_page}\n")
-                player_data = scrape_player(current_player_page)
+                player_data = scrape_player(current_player_page, year)
                 if player_data is not None or player_data != 0:
                     training_data.append(player_data)
                     prev_player_page = current_player_page
@@ -116,9 +166,11 @@ and then scrape the player pages for the players that played in that season via 
                 print("Skipping duplicate player page")
             time.sleep(2.5) # Sleep for 2.5 seconds to prevent rate limiting (30 requests / minute) (TODO: Implement proxies)
     end_time = time.time()
+    
     print("#" * 50)
     print(f"Scraped {len(training_data)} players in {end_time - start_time} seconds")
     print("#" * 50)
+    
     df = pd.DataFrame(training_data, columns=headers)
     print(df.head())
 
@@ -130,8 +182,11 @@ and then scrape the player pages for the players that played in that season via 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Selects the year of the players\' latest season to compare')
     parser.add_argument('--year', type=int, default=None, help='Year of the players\' latest season')
-    parser.add_argument('--single', action='store_true', help='Scrape a single season')
+    parser.add_argument("--single", action="store_true", help="Scrape a single season")
     args = parser.parse_args()
     if args.year is None:
         main(datetime.now().year - 1) # Default to the previous season
-    main(args.year, args.single)
+    if args.single:
+        scrape_season(args.year)
+    else:
+        main(args.year)

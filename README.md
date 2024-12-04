@@ -2,7 +2,7 @@
 
 ## This program will:
 - Scrape the data of all players of a given season via [Hockey-Reference.com](https://www.hockey-reference.com/leagues/NHL_2024_skaters.html)
-- it will then use an AI model to predict the stats and then output a .csv file to show the ranked stats of each player
+- it will then use a linear/polynomial model to predict the stats and then output a .csv file to show the ranked stats of each player
 > [!NOTE]
 > It will only scrape players that played in the specified season <br>
 > Ex. Connor Bedard will be in the training set if the season is at least the 2023-24 season

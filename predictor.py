@@ -4,6 +4,18 @@ import torch
 import argparse
 from datetime import datetime
 from pathlib import Path
+"""
+FOR THE MODEL
+
+- just use a basic linear or polynomial regression model for now
+- load the data from the csv files (player_stats.csv)
+- train the model
+- predict the values
+- save the model
+- return the predicted values in a spreadsheet
+- using the data from the csv files (season_stats.csv), calculate the loss
+- try to get to around 10% loss at max
+"""
 
 def predict(data):
     print("Predicting")

@@ -133,9 +133,9 @@ This will mainly be used to check for accuracy in the model
     players = table.find('tbody').find_all('tr')
     player_data = []
 
-    test_players = players[:3]  # For testing purposes
+    #test_players = players[:3]  # For testing purposes
 
-    for player in test_players:
+    for player in players:
         if player.find('th', {"scope": "row"}) is not None:
             season_stats = [td.text for td in player.find_all('td')]
             player_data.append(season_stats)

@@ -2,3 +2,7 @@
 proxies.txt
 test.py
 __pycache__/
+*.pyc
+sklearn-env/
+env/
+venv/

@@ -14,3 +14,6 @@ venv/
 # data files
 data/*
 
+# Mac build files
+**/.DS_Store
+

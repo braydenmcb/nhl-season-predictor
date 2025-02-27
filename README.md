@@ -20,6 +20,8 @@ Create a virtual environment via the commands:
   python venv env
   .\venv\Scripts\activate
   ```
+ - Use `deactivate` once you are done to exit the virtual environment.
+
 Once the environment is made, install the needed libraries via pip
   - Mac: `pip install requests beautifulsoup4 pandas numpy`
   - Windows: `pip3 install requests beautifulsoup4 pandas numpy`

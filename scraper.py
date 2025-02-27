@@ -12,8 +12,9 @@ import time
 # def get_proxy():
 #     return {'http': 'http://' + proxies.pop()}
 
-
+######################################################################
 ################# SINGLE SEASON PLAYER STATS SCRAPER #################
+######################################################################
 
 def scrape_season(year):
     """
@@ -43,7 +44,11 @@ This will mainly be used to check for accuracy in the model
     df.to_csv(f'data/season_stats_{year}.csv', index=False)
     print(df.head())
 
-################# CAREER PLAYER STATS SCRAPER #################
+
+#####################################################################
+################# CAREER PLAYER STATS SCRAPER #######################
+#####################################################################
+
 def scrape_player(url, year, training_data):
     """
 This function will scrape the player stats from the player's page on hockey-reference.com
@@ -173,8 +178,9 @@ and then scrape the player pages for the players that played in that season via 
     print(df.head())
     df.to_csv(f'data/player_stats_{year}.csv', index=False)
 
-
-################# ARGUMENT PARSER #################
+#####################################################################
+####################### ARGUMENT PARSER #############################
+#####################################################################
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Selects the year of the players\' latest season to compare')

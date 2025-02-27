@@ -1,3 +1,8 @@
-data
+# data/*.csv   # Ignore all .csv files in the #data/ directory for now/*.csv
 proxies.txt
 test.py
+__pycache__/
+*.pyc
+sklearn-env/
+env/
+venv/

@@ -13,13 +13,15 @@ import time
 #     return {'http': 'http://' + proxies.pop()}
 
 def scrape_season(year):
+    """
+This function will scrape the season given as an argument and save the data to a csv file 
+for the learning model to parse later as the expected values to help calculate loss
+"""
     try:
         response = requests.get(f'https://www.hockey-reference.com/leagues/NHL_{year}_skaters.html')
     except requests.exceptions.RequestException as e:
         print(f"Error fetching page: {e}")
         return 0
-    
-    print(f"Scraping season: {year}")
 
     soup = BeautifulSoup(response.content, 'html.parser')
     table = soup.find('table', {'id': 'player_stats'})
@@ -27,11 +29,10 @@ def scrape_season(year):
     headers = [th.text for th in table.find('thead').find_all('th')][10:]  # Skipping the over headers
     players = table.find('tbody').find_all('tr')
 
+    print(f"Scraping season: {year}")
     players_data = []
 
-    previous_player = players[0].find('td').find('a').text
-    print(headers)
-
+    previous_player = ''
     start = time.time()
     for player in players:
         if player.find('th', {"scope": "row"}) is not None:
@@ -55,7 +56,7 @@ def scrape_season(year):
 
 
 
-def scrape_player(url, year):
+def scrape_player(url, year, training_data):
     """
 This function will scrape the player stats from the player's page on hockey-reference.com
 it'll run thru the top 100 players from the last season and get their stats from all of their previous seasons (not including playoffs)
@@ -75,71 +76,134 @@ then it'll save the data to a csv file for the learning model to parse later
     table = soup.find('table', {'id': 'player_stats'})  # The table ID is 'stats_table' for regular season player stats
     if table is None:
         print(f"Could not find stats table for player: {player_name}")
-        return None
+        return
     # Extract data rows
     rows = table.find('tbody').find_all('tr')
     player_data = []
     for row in rows:
         # if the season is greater than the year argument, skip it
-        if row.find('th', {"data-stat": "year_id"}).text[:4] >= year:
+        if row.find('th', {"data-stat": "year_id"}).text[:4] >= str(year):
             continue
         # else, scrape the data
         if row.find('th', {"scope": "row"}) is not None:
             season_link = row.find('th')
             season_year = season_link.text
             season_stats = [td.text for td in row.find_all('td')]
-            season_statline = [player_name] + [season_year] + season_stats
-            player_data.append(season_statline)
+            if season_stats[4] != "":
+                # print("#" * 50)
+                # print(f"Scraped season: {season_year}")
+                # print(season_stats)
+                # print("#" * 50)
+                season_statline = [player_name] + [season_year] + season_stats
+                player_data.append(season_statline)
+            else:
+                print(f"Could not find season stats for player: {player_name}")
     print(f"Finished scraping player: {player_name}\n")
-    return player_data
+    training_data.extend(player_data)
 
-
+def get_headers(url):
+    """
+    This function will scrape the headers from the player's page on hockey-reference.com
+    so that the data can be properly matched and formatted
 """
+    try:
+        response = requests.get(url)
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching page: {e}")
+        return 0
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+    table = soup.find('table', {'id': 'player_stats'})
+    headers = [th.text for th in table.find('thead').find_all('th')][10:]
+    return headers
+
+
+def scrape_season(year):
+    """
+This function will scrape season stats for the requested season
+This will mainly be used to check for accuracy in the model
+"""
+    main_url = f'https://www.hockey-reference.com/leagues/NHL_{year}_skaters.html'
+    print(f"Scraping season stats from {main_url}\n")
+    response = requests.get(main_url)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    table = soup.find('table', {'class': 'stats_table'})
+
+    headers = [th.text for th in table.find('thead').find_all('th')][10:]
+    players = table.find('tbody').find_all('tr')
+    player_data = []
+
+    #test_players = players[:3]  # For testing purposes
+
+    for player in players:
+        if player.find('th', {"scope": "row"}) is not None:
+            season_stats = [td.text for td in player.find_all('td')]
+            player_data.append(season_stats)
+    df = pd.DataFrame(player_data, columns=headers[1:])
+    df.to_csv(f'data/season_stats_{year}.csv', index=False)
+    print(df.head())
+
+
+def main(year):
+    """
 The main function will scrape the table from the season requested
 and then scrape the player pages for the players that played in that season via scrape_player()
 """
-def main(year):
     #TODO
     '''
     1. Get the proxy to work to prevent rate limiting
     2. add a check to ensure that the seasons after the argumented year are not scraped
     '''
+
+    
     main_url = f'https://www.hockey-reference.com/leagues/NHL_{year}_skaters.html'
     print(f"Scraping player stats from {main_url}\n")
     response = requests.get(main_url)
     soup = BeautifulSoup(response.content, 'html.parser')
     training_data = []
     table = soup.find('table', {'class': 'stats_table'})
-    headers = ['Player Name'] + [th.text for th in table.find('thead').find_all('th')][10:]  # Skipping the over headers
+    
+    headers = ['Player Name'] + get_headers("https://www.hockey-reference.com/players/b/brownco02.html")
 
     players = table.find('tbody').find_all('tr')
     prev_player_page = ''
 
     start_time = time.time()
+    # test_players = players[:3]  # For testing purposes
     for player in players:
         if player.find('th', {"scope": "row"}) is not None:
-            player_link = player.find('td').find('a')
-            current_player_page = 'https://www.hockey-reference.com' + player_link['href']
+
+            try:
+                player_link = player.find('td').find('a')
+                current_player_page = 'https://www.hockey-reference.com' + player_link['href']
+            except TypeError:
+                print("Could not find player link")
+                continue
+
             if current_player_page != prev_player_page:
                 # print(f"Scraping player page: {current_player_page} | previous player page: {prev_player_page}\n")
-                player_data = scrape_player(current_player_page, year)
+                player_data = scrape_player(current_player_page, year, training_data)
                 if player_data is not None or player_data != 0:
                     training_data.append(player_data)
                     prev_player_page = current_player_page
+                    time.sleep(2.5) # Sleep for 2.5 seconds to prevent rate limiting (30 requests / minute) (TODO: Implement proxies)
                 else:
                     print(f"Error scraping player page: {current_player_page}")
+                    time.sleep(1) # Sleep for 1 second to prevent rate limiting
             else:
                 print("Skipping duplicate player page")
-            time.sleep(2.5) # Sleep for 2.5 seconds to prevent rate limiting (30 requests / minute) (TODO: Implement proxies)
+
     end_time = time.time()
+    
     print("#" * 50)
     print(f"Scraped {len(training_data)} players in {end_time - start_time} seconds")
+    print(f"Length of training data: {len(training_data)}")
     print("#" * 50)
-    df = pd.DataFrame(training_data, columns=headers)
+
+    filtered_data = [data for data in training_data if data is not None] #filter out the None values, idk where theyre coming from
+    df = pd.DataFrame(filtered_data, columns=headers)
     print(df.head())
-
-
-    df.to_csv('data/player_stats_{year}.csv', index=False)
+    df.to_csv(f'data/player_stats_{year}.csv', index=False)
 
 
 
@@ -151,6 +215,7 @@ if __name__ == '__main__':
     if args.year is None:
         main(datetime.now().year - 1) # Default to the previous season
     if args.single:
+        print("Scraping single season")
         scrape_season(args.year)
     else:
         main(args.year)

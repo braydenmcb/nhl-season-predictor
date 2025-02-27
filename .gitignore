@@ -1,8 +1,16 @@
-# data/*.csv   # Ignore all .csv files in the #data/ directory for now/*.csv
+# testing files
 proxies.txt
 test.py
+
+# cache files
 __pycache__/
 *.pyc
+
+# env files
 sklearn-env/
 env/
 venv/
+
+# data files
+data/*
+

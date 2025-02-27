@@ -7,14 +7,35 @@
 > It will only scrape players that played in the specified season <br>
 > Ex. Connor Bedard will be in the training set if the season is at least the 2023-24 season
 
-## How to use:
-### As of right now:
-use `python scraper.py --year "year"` to scrape the data from that season, it will be based on the latter year in the season
+# How to use:
+## Setting up the program(s):
+Create a virtual environment via the commands:
+  - for Mac:
+  ```
+  python -m venv env
+  source env/bin/activate
+  ```
+  - for Windows:
+  ```
+  python venv env
+  .\venv\Scripts\activate
+  ```
+Once the environment is made, install the needed libraries via pip
+  - Mac: `pip install requests beautifulsoup4 pandas numpy`
+  - Windows: `pip3 install requests beautifulsoup4 pandas numpy`
+    
+## Running the program(s):
+### For the scraper and predictor
+use `python predictor.py --year "year"` to predict the next season after the given year, it will be based on the latter year in the season
   - Ex. if you want the 2023-24 season, use `--year 2024`
-  - The default year is the previous season (right now the 2022-23 season)
-you can also use `python scraper.py --year "year" --single` to scrape a single season
+  - The default year is the previous completed season (right now the 2022-23 season)
+  - The program will call `scraper.py` if the seasons are not in the data folder
+
+### For just the scraper
+use `python scraper.py --year "year"` to scrape the data from that season. <br/>
+you can also use `python scraper.py --year "year" --single` to scrape a single season.
   - This is mainly used to gather the results / expected data
-  - leaving out the `--single` will scrape each players career stats by season
+  - leaving out the `--single` will scrape each players' career stats (given they played in the given year).
 
 ## Road Map
 - [ ] Make the scraper track up to the specified season at compilation and output to a csv file

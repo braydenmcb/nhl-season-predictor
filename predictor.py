@@ -63,8 +63,6 @@ def process_data(data1, data2):
     data2['ATOI'] = data2['ATOI'].dt.total_seconds() / 60
     data2['ATOI'].fillna(0, inplace=True)  # Replace NaNs with 0 or another appropriate value
 
-
-    print(data1.iloc[2])
     return data1, data2
 
 def get_training_data(data):
@@ -144,7 +142,7 @@ def get_training_data(data):
         
         training_dataframe = pd.DataFrame(training_data)
     
-    print(training_dataframe.head())
+    # print(training_dataframe.head())
     return training_dataframe
 
 def load_data(year):
@@ -173,6 +171,9 @@ def load_data(year):
 
 def gradient_descent(X, y, epochs=1000, step_size=0.01):
 
+    # print(y)
+    # print(X)
+
     X = np.array(X, dtype=float)
     y = np.array(y, dtype=float)
 
@@ -195,6 +196,10 @@ def gradient_descent(X, y, epochs=1000, step_size=0.01):
     return predictor, w
 
 def predict(data):
+    """
+    TODO: fix the issue where some stats are NaN since they weren't tracked when some players were playing
+    also getting some int overflow in matmul and some invalid values in subtraction in gradient_descent()
+    """
     features = ['Points_Per_Game', 'Goals_Per_Game', 'Assists_Per_Game', 'Shots_Per_Game', 'Shooting_Percentage', 
                 'Faceoff_Percentage', 'Avg_Time_On_Ice','PowerPlay_Goals', 'ShortHanded_Goals', 'Even_Strength_Goals', 
                 'Takeaways', 'Giveaways', 'Hits']
@@ -205,23 +210,26 @@ def predict(data):
 
     predictions = []
 
-    for player_name, player_df in data.groupby('Player Name'):
-        print(f"Predicting for {player_name} . . .")
-        print(player_df.head())
+    test_names = ["Connor McDavid", "Leon Draisaitl", "Sidney Crosby"]
+    test_data = data[data["Player Name"].isin(test_names)].reset_index(drop=True)
+    print(test_data)
+
+    
+    for player_name, player_df in test_data.groupby('Player Name'):
+        print(f"Predicting for player: {player_name}")
         player_data = player_df[features].copy()
         player_y = player_df[targets].copy()
 
-        print("before gradient descent")
         player_predictor, player_weights = gradient_descent(player_data, player_y)
         player_predictions = player_predictor(player_data)
-        print("after gradient descent")
+
         for i in range(len(player_predictions)):
             pred_dict = {f'Predicted_{target}': player_predictions[i][j] for j, target in enumerate(targets)}
             predictions.append({
                 'Player': player_name,
                 "Sesaon": player_df.iloc[i]['Season'],
                 **pred_dict
-            }) 
+            })
             
         
     predictions_df = pd.DataFrame(predictions)
@@ -258,10 +266,6 @@ def main(year):
     # load and process the data
     X, y = load_data(year)
     
-    # drop the awards column
-    X.drop(columns=["Awards"], inplace=True)
-    y.drop(columns=["Awards"], inplace=True)
-
     training_data = get_training_data(X)
     data, y = process_data(training_data, y)
 

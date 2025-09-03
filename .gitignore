@@ -12,7 +12,7 @@ env/
 venv/
 
 # data files
-data/*
+data/**
 
 # Mac build files
 **/.DS_Store
